@@ -1,4 +1,3 @@
-
 // ==========================================
 // CASE 404: MISSING TRUTH
 // COMPLETE GAME JAVASCRIPT
@@ -22,7 +21,82 @@ let gameOver = false;
 let gameOverTimeout = null;
 let notificationTimeout = null;
 
+let musicMuted = false;
+
 const correctPassword = "0907";
+
+
+// ==========================================
+// BACKGROUND MUSIC LOOP & MUTE CONTROL
+// ==========================================
+
+function setupBackgroundMusic() {
+    const audio = document.getElementById("bgMusic");
+    if (!audio) return;
+
+    audio.loop = true;
+    audio.volume = 0.35;
+    audio.muted = musicMuted;
+
+    audio.addEventListener("ended", () => {
+        if (!musicMuted) {
+            audio.currentTime = 0;
+            audio.play().catch(() => {});
+        }
+    });
+
+    updateMusicButton();
+}
+
+function startBackgroundMusic() {
+    const audio = document.getElementById("bgMusic");
+    if (!audio) return;
+
+    audio.loop = true;
+    audio.volume = 0.35;
+    audio.muted = musicMuted;
+
+    if (!musicMuted && audio.paused) {
+        audio.play().catch(() => {});
+    }
+
+    updateMusicButton();
+}
+
+function toggleMusic() {
+    const audio = document.getElementById("bgMusic");
+    if (!audio) return;
+
+    musicMuted = !musicMuted;
+    audio.loop = true;
+    audio.volume = 0.35;
+    audio.muted = musicMuted;
+
+    if (!musicMuted) {
+        audio.play().catch(() => {});
+    }
+
+    updateMusicButton();
+    showNotification(musicMuted ? "Background music muted." : "Background music unmuted.");
+}
+
+function updateMusicButton() {
+    const icon = document.getElementById("musicIcon");
+    const label = document.getElementById("musicLabel");
+    const btn = document.getElementById("musicToggleBtn");
+
+    if (icon) {
+        icon.textContent = musicMuted ? "🔇" : "🔊";
+    }
+
+    if (label) {
+        label.textContent = musicMuted ? "MUSIC: MUTED" : "MUSIC: ON";
+    }
+
+    if (btn) {
+        btn.classList.toggle("muted", musicMuted);
+    }
+}
 
 
 // ==========================================
@@ -122,6 +196,8 @@ function registerInvestigator() {
 function startInvestigation() {
 
     if (gameOver) return;
+
+    startBackgroundMusic();
 
     if (!timerRunning && !unlocked) {
 
@@ -342,6 +418,18 @@ const clues = [
         title: "OLD REMINDER",
 
         text: `"If I ever forget my computer password, remember this: Enter the day first, followed by the month. Four digits only."`
+    },
+
+    {
+        title: "DESK STICKY NOTE",
+
+        text: `"Format reminder: DDMM — day first, then month. Always keep leading zeros so it's four digits."`
+    },
+
+    {
+        title: "TORN RECEIPT",
+
+        text: `"09/07/2026 • 4:15 PM. Scrawled on the back: 'The day everything changed. Don't forget this date.'"`
     }
 
 ];
@@ -1077,6 +1165,8 @@ document.addEventListener("keydown", function(event) {
 // ==========================================
 
 document.addEventListener("DOMContentLoaded", function() {
+
+    setupBackgroundMusic();
 
     const currentScore =
         document.getElementById("currentScore");
