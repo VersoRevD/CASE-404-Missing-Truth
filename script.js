@@ -15,6 +15,11 @@ let score = 100;
 let seconds = 0;
 let timerInterval = null;
 let timerRunning = false;
+let lastPenaltySecond = 0;
+const TIME_LIMIT_SECONDS = 600; // 10 minutes
+const PENALTY_INTERVAL_SECONDS = 30; // Every 30 seconds
+const PENALTY_POINTS = 5;
+
 let hintCount = 0;
 let desktopHintCount = 0;
 const MAX_DESKTOP_HINTS = 10;
@@ -295,7 +300,7 @@ function registerInvestigator() {
 
 
 // ==========================================
-// TIMER SYSTEM
+// TIMER SYSTEM (WITH 30s PENALTY & 10m LIMIT)
 // ==========================================
 
 function startInvestigation() {
@@ -309,6 +314,7 @@ function startInvestigation() {
         }
 
         seconds = 0;
+        lastPenaltySecond = 0;
         timerRunning = true;
 
         updateTimer();
@@ -320,9 +326,36 @@ function startInvestigation() {
             seconds++;
             updateTimer();
 
+            // Every 30 seconds elapsed: deduct 5 points
+            if (
+                seconds > 0 &&
+                seconds % PENALTY_INTERVAL_SECONDS === 0 &&
+                seconds !== lastPenaltySecond
+            ) {
+                lastPenaltySecond = seconds;
+                score = Math.max(0, score - PENALTY_POINTS);
+                syncScoreDisplays();
+
+                if (score <= 0) {
+                    triggerGameOver("You have run out of investigation points.");
+                    return;
+                }
+
+                showNotification(
+                    `30s passed: -${PENALTY_POINTS} points (${score} PTS left).`
+                );
+            }
+
+            // 10-minute (600s) time limit check
+            if (seconds >= TIME_LIMIT_SECONDS) {
+                score = 0;
+                syncScoreDisplays();
+                triggerGameOver("Time limit reached (10:00). Investigation terminated.");
+            }
+
         }, 1000);
 
-        showNotification("Investigation timer started.");
+        showNotification("Investigation timer started (10:00 limit).");
     }
 
     showScreen("passwordScreen");
@@ -432,7 +465,7 @@ function useDesktopHint() {
     updateDesktopHintUI();
 
     if (score <= 0) {
-        triggerGameOver();
+        triggerGameOver("You have run out of investigation points.");
         return;
     }
 
@@ -540,7 +573,7 @@ function submitAppPassword() {
         syncScoreDisplays();
 
         if (score <= 0) {
-            triggerGameOver();
+            triggerGameOver("You have run out of investigation points.");
             return;
         }
 
@@ -705,9 +738,9 @@ function resetToStartScreen() {
 // AUTOMATIC GAME OVER SYSTEM
 // ==========================================
 
-function triggerGameOver() {
+function triggerGameOver(reasonMessage = "You have run out of investigation points.") {
 
-    if (gameOver || score > 0) return;
+    if (gameOver) return;
 
     gameOver = true;
     score = 0;
@@ -745,7 +778,7 @@ function triggerGameOver() {
             <h1>GAME OVER</h1>
 
             <p class="game-over-message">
-                You have run out of investigation points.
+                ${reasonMessage}
             </p>
 
             <p class="game-over-subtitle">
@@ -779,6 +812,7 @@ function resetAfterGameOver() {
     investigator = "";
     score = 100;
     seconds = 0;
+    lastPenaltySecond = 0;
     hintCount = 0;
     unlocked = false;
 
@@ -910,7 +944,7 @@ function useHint() {
     syncScoreDisplays();
 
     if (score <= 0) {
-        triggerGameOver();
+        triggerGameOver("You have run out of investigation points.");
         return;
     }
 
@@ -971,8 +1005,6 @@ function checkPassword() {
 
         unlocked = true;
 
-        stopTimer();
-
         feedback.style.color = "#72b58b";
 
         feedback.textContent =
@@ -1018,7 +1050,7 @@ function checkPassword() {
         input.value = "";
 
         if (score <= 0) {
-            triggerGameOver();
+            triggerGameOver("You have run out of investigation points.");
             return;
         }
 
@@ -1516,6 +1548,7 @@ function returnToMainMenu() {
     investigator = "";
     score = 100;
     seconds = 0;
+    lastPenaltySecond = 0;
     hintCount = 0;
     unlocked = false;
 
