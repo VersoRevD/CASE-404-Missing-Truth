@@ -16,6 +16,8 @@ let seconds = 0;
 let timerInterval = null;
 let timerRunning = false;
 let hintCount = 0;
+let desktopHintCount = 0;
+const MAX_DESKTOP_HINTS = 10;
 let unlocked = false;
 let gameOver = false;
 let gameOverTimeout = null;
@@ -25,6 +27,54 @@ const correctPassword = "0907";
 const TOTAL_EVIDENCE = 5;
 const LEADERBOARD_KEY = "case404Leaderboard_v1";
 let collectedEvidence = new Set();
+
+// Files is always open; locked apps use the specified passwords:
+// - photos: "pjih" (case-insensitive)
+// - messages: "1179"
+// - notes: "elena" (case-insensitive)
+// - history: "1579"
+let unlockedApps = new Set(["files"]);
+let pendingUnlockApp = null;
+
+const appUnlockConfig = {
+    photos: {
+        title: "UNLOCK PHOTO GALLERY",
+        prompt: "Enter the password to unlock PHOTO GALLERY.",
+        placeholder: "Enter password",
+        check: val => val.trim().toLowerCase() === "pjih"
+    },
+    messages: {
+        title: "UNLOCK MESSAGES",
+        prompt: "Enter the 4-digit password to unlock MESSAGES.",
+        placeholder: "4-digit password",
+        check: val => val.trim() === "1179"
+    },
+    notes: {
+        title: "UNLOCK PERSONAL NOTES",
+        prompt: "Enter the password to unlock PERSONAL NOTES.",
+        placeholder: "Enter password",
+        check: val => val.trim().toLowerCase() === "elena"
+    },
+    history: {
+        title: "UNLOCK BROWSER HISTORY",
+        prompt: "Enter the 4-digit password to unlock BROWSER HISTORY.",
+        placeholder: "4-digit password",
+        check: val => val.trim() === "1579"
+    }
+};
+
+const desktopHints = [
+    "HINT 1 (Photos): It's a 4-letter code made from the first letters of the personal files.",
+    "HINT 2 (Photos): Look at Personal Information, Journal Entry, Important Documents, and hidden_404.dat.",
+    "HINT 3 (Photos): The 4 letters in order are P - J - I - H.",
+    "HINT 4 (Messages): The password is a 4-digit number.",
+    "HINT 5 (Messages): The 4-digit password for Messages is 1179.",
+    "HINT 6 (Notes): Look at who owns the account and appears in the conversations.",
+    "HINT 7 (Notes): The password for Notes is the victim's first name: elena.",
+    "HINT 8 (Browser History): The password is a 4-digit number.",
+    "HINT 9 (Browser History): The 4-digit password for Browser History is 1579.",
+    "HINT 10 (Summary): Passwords — Photos: pjih | Messages: 1179 | Notes: elena | History: 1579."
+];
 
 let musicMuted = false;
 let clickAudioCtx = null;
@@ -140,6 +190,19 @@ function initBackgroundMusic() {
 
 
 // ==========================================
+// SCORE SYNC
+// ==========================================
+
+function syncScoreDisplays() {
+    const currentScore = document.getElementById("currentScore");
+    const desktopScore = document.getElementById("desktopScore");
+
+    if (currentScore) currentScore.textContent = String(score);
+    if (desktopScore) desktopScore.textContent = String(score);
+}
+
+
+// ==========================================
 // SCREEN NAVIGATION
 // ==========================================
 
@@ -191,6 +254,7 @@ function backToInvestigation() {
     if (gameOver) return;
 
     closeApp();
+    closeUnlockAppModal();
     closeCompileModal();
     showScreen("passwordScreen");
 
@@ -306,16 +370,95 @@ function stopTimer() {
 
 
 // ==========================================
-// EVIDENCE & CONCLUSION HELPERS
+// EVIDENCE LOCKS, DESKTOP HINTS & CONCLUSION HELPERS
 // ==========================================
+
+function syncDesktopAppBadges() {
+    ["files", "photos", "messages", "notes", "history"].forEach(appName => {
+        const btn = document.getElementById(`appBtn-${appName}`);
+        const badge = document.getElementById(`appLock-${appName}`);
+        const isAppUnlocked = unlockedApps.has(appName);
+        const isCollected = collectedEvidence.has(appName);
+
+        if (btn) {
+            btn.classList.toggle("locked", !isAppUnlocked);
+            btn.classList.toggle("collected", isCollected);
+        }
+
+        if (badge) {
+            if (isCollected) {
+                badge.textContent = "✓ COLLECTED";
+            } else if (isAppUnlocked) {
+                badge.textContent = "OPEN";
+            } else {
+                badge.textContent = "🔒 LOCKED";
+            }
+        }
+    });
+}
+
+
+function updateDesktopHintUI() {
+    const usedEl = document.getElementById("desktopHintsUsed");
+    const btnEl = document.getElementById("desktopHintBtn");
+
+    if (usedEl) {
+        usedEl.textContent = String(desktopHintCount);
+    }
+
+    if (btnEl) {
+        btnEl.disabled = desktopHintCount >= MAX_DESKTOP_HINTS;
+        if (desktopHintCount >= MAX_DESKTOP_HINTS) {
+            btnEl.textContent = `MAX HINTS REACHED (${MAX_DESKTOP_HINTS}/${MAX_DESKTOP_HINTS})`;
+        } else {
+            btnEl.innerHTML = `ASK FOR PASSWORD HINT (-5 PTS • <span id="desktopHintsUsed">${desktopHintCount}</span>/${MAX_DESKTOP_HINTS} USED)`;
+        }
+    }
+}
+
+
+function useDesktopHint() {
+    if (!unlocked || gameOver) return;
+
+    if (desktopHintCount >= MAX_DESKTOP_HINTS) {
+        showNotification(`Maximum of ${MAX_DESKTOP_HINTS} desktop hints reached.`);
+        return;
+    }
+
+    score = Math.max(0, score - 5);
+    desktopHintCount++;
+
+    syncScoreDisplays();
+    updateDesktopHintUI();
+
+    if (score <= 0) {
+        triggerGameOver();
+        return;
+    }
+
+    const hintMsg = desktopHints[Math.min(desktopHintCount - 1, desktopHints.length - 1)];
+    const outputEl = document.getElementById("desktopHintText");
+    if (outputEl) {
+        outputEl.textContent = hintMsg;
+    }
+
+    showNotification(hintMsg);
+}
+
 
 function resetEvidenceProgress() {
     collectedEvidence.clear();
+    unlockedApps = new Set(["files"]);
+    pendingUnlockApp = null;
+    desktopHintCount = 0;
 
-    document.querySelectorAll("#computerScreen .app-icon").forEach(btn => {
-        btn.classList.remove("collected");
-    });
+    const outputEl = document.getElementById("desktopHintText");
+    if (outputEl) {
+        outputEl.textContent = `Need help finding an app password? Up to ${MAX_DESKTOP_HINTS} hints available (-5 points each).`;
+    }
 
+    syncDesktopAppBadges();
+    updateDesktopHintUI();
     updateEvidenceUI();
 }
 
@@ -343,19 +486,69 @@ function updateEvidenceUI() {
 }
 
 
-function markAppCollected(appName) {
-    const appIndexMap = {
-        files: 0,
-        photos: 1,
-        messages: 2,
-        notes: 3,
-        history: 4
-    };
+function openUnlockAppModal(appName) {
+    const cfg = appUnlockConfig[appName];
+    const modal = document.getElementById("unlockAppModal");
+    const titleEl = document.getElementById("unlockAppTitle");
+    const promptEl = document.getElementById("unlockAppPrompt");
+    const inputEl = document.getElementById("appPassInput");
+    const errEl = document.getElementById("unlockAppError");
 
-    const buttons = document.querySelectorAll("#computerScreen .app-icon");
-    const idx = appIndexMap[appName];
-    if (typeof idx === "number" && buttons[idx]) {
-        buttons[idx].classList.add("collected");
+    if (!cfg || !modal) return;
+
+    pendingUnlockApp = appName;
+    if (titleEl) titleEl.textContent = cfg.title;
+    if (promptEl) promptEl.textContent = cfg.prompt;
+    if (errEl) errEl.textContent = "";
+    if (inputEl) {
+        inputEl.value = "";
+        inputEl.placeholder = cfg.placeholder;
+    }
+
+    modal.classList.add("show");
+    if (inputEl) inputEl.focus();
+}
+
+
+function closeUnlockAppModal() {
+    const modal = document.getElementById("unlockAppModal");
+    if (modal) {
+        modal.classList.remove("show");
+    }
+    pendingUnlockApp = null;
+}
+
+
+function submitAppPassword() {
+    if (gameOver || !pendingUnlockApp) return;
+
+    const appName = pendingUnlockApp;
+    const cfg = appUnlockConfig[appName];
+    const inputEl = document.getElementById("appPassInput");
+    const errEl = document.getElementById("unlockAppError");
+
+    if (!cfg || !inputEl) return;
+
+    if (cfg.check(inputEl.value)) {
+        unlockedApps.add(appName);
+        syncDesktopAppBadges();
+        closeUnlockAppModal();
+        showNotification(`${appData[appName].title} unlocked.`);
+        openApp(appName);
+    } else {
+        score = Math.max(0, score - 10);
+        syncScoreDisplays();
+
+        if (score <= 0) {
+            triggerGameOver();
+            return;
+        }
+
+        if (errEl) {
+            errEl.textContent = "Incorrect password. -10 POINTS.";
+        }
+        inputEl.value = "";
+        inputEl.focus();
     }
 }
 
@@ -407,6 +600,7 @@ function submitCaseConclusion() {
 
     stopTimer();
     closeApp();
+    closeUnlockAppModal();
     closeCompileModal();
 
     const finalScore = score;
@@ -521,6 +715,7 @@ function triggerGameOver() {
     stopTimer();
     closeClue();
     closeApp();
+    closeUnlockAppModal();
     closeCompileModal();
 
     const notification = document.getElementById("notification");
@@ -529,11 +724,7 @@ function triggerGameOver() {
         notification.classList.remove("show");
     }
 
-    const currentScore = document.getElementById("currentScore");
-
-    if (currentScore) {
-        currentScore.textContent = "0";
-    }
+    syncScoreDisplays();
 
     const oldOverlay = document.getElementById("gameOverOverlay");
 
@@ -606,9 +797,6 @@ function resetAfterGameOver() {
     const passwordFeedback =
         document.getElementById("passwordFeedback");
 
-    const currentScore =
-        document.getElementById("currentScore");
-
     if (investigatorName) {
         investigatorName.value = "";
     }
@@ -626,14 +814,12 @@ function resetAfterGameOver() {
         passwordFeedback.style.color = "";
     }
 
-    if (currentScore) {
-        currentScore.textContent = "100";
-    }
-
+    syncScoreDisplays();
     updateTimer();
 
     closeClue();
     closeApp();
+    closeUnlockAppModal();
     closeCompileModal();
 
     const notification = document.getElementById("notification");
@@ -721,12 +907,7 @@ function useHint() {
     if (unlocked || gameOver) return;
 
     score = Math.max(0, score - 5);
-
-    const currentScore = document.getElementById("currentScore");
-
-    if (currentScore) {
-        currentScore.textContent = score;
-    }
+    syncScoreDisplays();
 
     if (score <= 0) {
         triggerGameOver();
@@ -806,7 +987,10 @@ function checkPassword() {
             if (gameOver) return;
 
             closeApp();
+            syncDesktopAppBadges();
+            updateDesktopHintUI();
             updateEvidenceUI();
+            syncScoreDisplays();
 
             showScreen("computerScreen");
 
@@ -824,13 +1008,7 @@ function checkPassword() {
     else {
 
         score = Math.max(0, score - 10);
-
-        const currentScore =
-            document.getElementById("currentScore");
-
-        if (currentScore) {
-            currentScore.textContent = score;
-        }
+        syncScoreDisplays();
 
         feedback.style.color = "#e16c72";
 
@@ -856,7 +1034,7 @@ function checkPassword() {
 const appData = {
 
     // --------------------------------------
-    // FILES
+    // FILES (ALWAYS OPEN)
     // --------------------------------------
 
     files: {
@@ -1249,6 +1427,11 @@ function openApp(appName) {
 
     if (!app) return;
 
+    if (!unlockedApps.has(appName)) {
+        openUnlockAppModal(appName);
+        return;
+    }
+
     const appTitle = document.getElementById("appTitle");
     const appContent = document.getElementById("appContent");
     const appWindow = document.getElementById("appWindow");
@@ -1263,7 +1446,7 @@ function openApp(appName) {
     const isNewEvidence = !collectedEvidence.has(appName);
     if (isNewEvidence) {
         collectedEvidence.add(appName);
-        markAppCollected(appName);
+        syncDesktopAppBadges();
         updateEvidenceUI();
         showNotification(
             `Evidence collected (${collectedEvidence.size}/${TOTAL_EVIDENCE}): ${app.title}`
@@ -1336,9 +1519,6 @@ function returnToMainMenu() {
     hintCount = 0;
     unlocked = false;
 
-    const currentScore =
-        document.getElementById("currentScore");
-
     const passwordInput =
         document.getElementById("passwordInput");
 
@@ -1350,10 +1530,6 @@ function returnToMainMenu() {
 
     const registrationError =
         document.getElementById("registrationError");
-
-    if (currentScore) {
-        currentScore.textContent = score;
-    }
 
     if (passwordInput) {
         passwordInput.value = "";
@@ -1372,8 +1548,10 @@ function returnToMainMenu() {
         registrationError.textContent = "";
     }
 
+    syncScoreDisplays();
     closeApp();
     closeClue();
+    closeUnlockAppModal();
     closeCompileModal();
 
     updateTimer();
@@ -1400,7 +1578,16 @@ document.addEventListener("keydown", function(event) {
     if (event.key === "Escape") {
         closeClue();
         closeApp();
+        closeUnlockAppModal();
         closeCompileModal();
+    }
+
+    if (
+        event.key === "Enter" &&
+        document.getElementById("unlockAppModal")?.classList.contains("show") &&
+        document.activeElement.id === "appPassInput"
+    ) {
+        submitAppPassword();
     }
 
     if (
@@ -1421,15 +1608,10 @@ document.addEventListener("keydown", function(event) {
 document.addEventListener("DOMContentLoaded", function() {
 
     initBackgroundMusic();
+    syncDesktopAppBadges();
+    updateDesktopHintUI();
     updateEvidenceUI();
-
-    const currentScore =
-        document.getElementById("currentScore");
-
-    if (currentScore) {
-        currentScore.textContent = score;
-    }
-
+    syncScoreDisplays();
     updateTimer();
 
     showScreen("startScreen");
