@@ -1,3 +1,4 @@
+
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
 
 /* =====================================
@@ -649,21 +650,12 @@ input::placeholder {
     padding: 15px 25px;
     background: #0b0c10;
     border-bottom: 1px solid #393239;
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
+    display: flex;
+    justify-content: space-between;
     align-items: center;
-    gap: 15px;
     color: #d3ced0;
     font-size: 11px;
     letter-spacing: 1px;
-}
-
-.computer-header > div:first-child {
-    justify-self: start;
-}
-
-.computer-header > div:last-child {
-    justify-self: end;
 }
 
 .online-dot {
@@ -683,7 +675,7 @@ input::placeholder {
 .computer-navigation {
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-end;
     gap: 12px;
 }
 
@@ -1048,7 +1040,6 @@ input::placeholder {
     }
 
     .computer-header {
-        display: flex;
         padding: 13px;
         font-size: 9px;
         flex-wrap: wrap;
