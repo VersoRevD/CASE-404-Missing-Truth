@@ -72,7 +72,7 @@
             <p><span>03.</span> Use hints when necessary. Every hint deducts 5 points.</p>
             <p><span>04.</span> Every incorrect password deducts 10 points.</p>
             <p><span>05.</span> Unlock Elena's computer to explore its contents.</p>
-            <p><span>06.</span> Examine files, photos, messages, notes, and browser history.</p>
+            <p><span>06.</span> Examine unlocked evidence to find passwords for locked files, photos, messages, notes, and browser history.</p>
             <p><span>07.</span> Pay attention to details. They may reveal the truth.</p>
         </div>
 
@@ -401,11 +401,13 @@
             <p class="muted">Welcome back, Elena.</p>
 
             <p class="muted">
-                Examine all 5 applications to gather evidence before compiling your case.
+                Files is unlocked. Examine evidence and unlock the remaining apps to gather 5/5 evidence.
             </p>
 
             <p class="evidence-counter">
                 EVIDENCE COLLECTED: <span id="evidenceCount">0/5</span>
+                &nbsp;|&nbsp;
+                SCORE: <span id="desktopScore">100</span>
             </p>
 
         </div>
@@ -413,31 +415,45 @@
 
         <div class="app-grid">
 
-            <button class="app-icon" onclick="openApp('files')">
+            <button id="appBtn-files" class="app-icon" onclick="openApp('files')">
                 <span>📁</span>
                 <small>Files</small>
+                <small id="appLock-files" class="lock-badge">OPEN</small>
             </button>
 
-            <button class="app-icon" onclick="openApp('photos')">
+            <button id="appBtn-photos" class="app-icon locked" onclick="openApp('photos')">
                 <span>🖼️</span>
                 <small>Photos</small>
+                <small id="appLock-photos" class="lock-badge">🔒 LOCKED</small>
             </button>
 
-            <button class="app-icon" onclick="openApp('messages')">
+            <button id="appBtn-messages" class="app-icon locked" onclick="openApp('messages')">
                 <span>✉️</span>
                 <small>Messages</small>
+                <small id="appLock-messages" class="lock-badge">🔒 LOCKED</small>
             </button>
 
-            <button class="app-icon" onclick="openApp('notes')">
+            <button id="appBtn-notes" class="app-icon locked" onclick="openApp('notes')">
                 <span>📝</span>
                 <small>Notes</small>
+                <small id="appLock-notes" class="lock-badge">🔒 LOCKED</small>
             </button>
 
-            <button class="app-icon" onclick="openApp('history')">
+            <button id="appBtn-history" class="app-icon locked" onclick="openApp('history')">
                 <span>🌐</span>
                 <small>Browser History</small>
+                <small id="appLock-history" class="lock-badge">🔒 LOCKED</small>
             </button>
 
+        </div>
+
+        <div class="desktop-hint-box">
+            <button id="desktopHintBtn" class="hint-btn" onclick="useDesktopHint()">
+                ASK FOR PASSWORD HINT (-5 PTS • <span id="desktopHintsUsed">0</span>/10 USED)
+            </button>
+            <p id="desktopHintText" class="muted desktop-hint-output">
+                Need help finding an app password? Up to 10 hints available (-5 points each).
+            </p>
         </div>
 
         <div class="compile-section">
@@ -457,6 +473,40 @@
 
     </div>
 </section>
+
+
+<!-- ================================== -->
+<!-- UNLOCK EVIDENCE APP MODAL -->
+<!-- ================================== -->
+
+<div id="unlockAppModal" class="modal">
+    <div class="modal-content">
+
+        <button class="close-btn" onclick="closeUnlockAppModal()">
+            ×
+        </button>
+
+        <p class="eyebrow">ENCRYPTED EVIDENCE</p>
+        <h2 id="unlockAppTitle">UNLOCK APPLICATION</h2>
+
+        <p id="unlockAppPrompt" class="muted"></p>
+
+        <input
+            type="text"
+            id="appPassInput"
+            placeholder="Enter password"
+            maxlength="20"
+            autocomplete="off"
+        >
+
+        <p id="unlockAppError" class="error-message"></p>
+
+        <button class="primary-btn" onclick="submitAppPassword()">
+            UNLOCK EVIDENCE
+        </button>
+
+    </div>
+</div>
 
 
 <!-- ================================== -->
