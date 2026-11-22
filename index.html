@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -11,6 +10,8 @@
 </head>
 
 <body>
+
+<audio id="bgMusic" src="music/case404-ambience.mp3" loop preload="auto" muted></audio>
 
 <div class="ambient"></div>
 
@@ -396,7 +397,11 @@
             <p class="muted">Welcome back, Elena.</p>
 
             <p class="muted">
-                Select an application to explore its contents.
+                Examine all 5 applications to gather evidence before compiling your case.
+            </p>
+
+            <p class="evidence-counter">
+                EVIDENCE COLLECTED: <span id="evidenceCount">0/5</span>
             </p>
 
         </div>
@@ -431,11 +436,97 @@
 
         </div>
 
+        <div class="compile-section">
+            <p id="compileStatusText" class="muted">
+                Collect all 5/5 evidence items to compile why Elena was murdered.
+            </p>
+            <button id="compileCaseBtn" class="primary-btn" onclick="openCompileModal()" disabled>
+                COMPILE CASE (0/5 EVIDENCE)
+            </button>
+        </div>
+
 
         <div class="desktop-footer">
             <span>ELENA-PC / SYSTEM ONLINE</span>
             <span>PRIVATE USER ACCOUNT</span>
         </div>
+
+    </div>
+</section>
+
+
+<!-- ================================== -->
+<!-- COMPILE MURDER CONCLUSION MODAL -->
+<!-- ================================== -->
+
+<div id="compileModal" class="modal">
+    <div class="modal-content compile-modal-content">
+
+        <button class="close-btn" onclick="closeCompileModal()">
+            ×
+        </button>
+
+        <p class="eyebrow">FINAL CASE COMPILATION</p>
+        <h2>WHY WAS ELENA MURDERED?</h2>
+
+        <p class="muted">
+            Based on the 5 pieces of evidence you gathered, select why Elena was targeted on July 9–10, 2026:
+        </p>
+
+        <div class="motive-options">
+            <label class="motive-option">
+                <input type="radio" name="murderMotive" value="accidental">
+                <span>She died in an accidental fall while checking her locked apartment door.</span>
+            </label>
+
+            <label class="motive-option">
+                <input type="radio" name="murderMotive" value="evidence">
+                <span>She uncovered hidden evidence and refused to delete files and photos after being stalked and threatened.</span>
+            </label>
+
+            <label class="motive-option">
+                <input type="radio" name="murderMotive" value="robbery">
+                <span>A random burglary occurred with no connection to her messages or files.</span>
+            </label>
+        </div>
+
+        <p id="compileError" class="error-message"></p>
+
+        <button class="primary-btn" onclick="submitCaseConclusion()">
+            SUBMIT CASE REPORT
+        </button>
+
+    </div>
+</div>
+
+
+<!-- ================================== -->
+<!-- CASE SOLVED & LEADERBOARD SCREEN -->
+<!-- ================================== -->
+
+<section id="solvedScreen" class="screen">
+    <div class="panel solved-panel">
+
+        <p class="eyebrow">CASE FILE #404 • CLOSED</p>
+        <h2>INVESTIGATION REPORT</h2>
+
+        <div id="caseVerdictBox" class="verdict-box"></div>
+
+        <div class="summary-stats">
+            <p><strong>INVESTIGATOR:</strong> <span id="summaryInvestigator">-</span></p>
+            <p><strong>FINAL SCORE:</strong> <span id="summaryScore">0</span></p>
+            <p><strong>ELAPSED TIME:</strong> <span id="summaryTime">00:00</span></p>
+            <p><strong>EVIDENCE GATHERED:</strong> <span id="summaryEvidence">5/5</span></p>
+        </div>
+
+        <div class="leaderboard-box">
+            <p class="eyebrow">TOP INVESTIGATORS LEADERBOARD</p>
+            <div id="leaderboardList" class="leaderboard-list"></div>
+        </div>
+
+        <button class="primary-btn" onclick="resetToStartScreen()">
+            NEW INVESTIGATION
+        </button>
 
     </div>
 </section>
