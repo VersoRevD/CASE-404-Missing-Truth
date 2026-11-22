@@ -22,13 +22,75 @@ let gameOverTimeout = null;
 let notificationTimeout = null;
 
 let musicMuted = false;
+let clickAudioCtx = null;
+let lastClickTime = 0;
 
 const correctPassword = "0907";
 
 
 // ==========================================
-// BACKGROUND MUSIC LOOP & MUTE CONTROL
+// WEB AUDIO CLICK SOUND & BACKGROUND MUSIC
 // ==========================================
+
+function playClickSound(pitch = 680, duration = 0.045, peakGain = 0.08) {
+    if (musicMuted) return;
+
+    const nowMs = performance.now();
+    if (nowMs - lastClickTime < 45) return;
+    lastClickTime = nowMs;
+
+    try {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return;
+
+        if (!clickAudioCtx) {
+            clickAudioCtx = new AudioContextClass();
+        }
+
+        if (clickAudioCtx.state === "suspended") {
+            clickAudioCtx.resume().catch(() => {});
+        }
+
+        const now = clickAudioCtx.currentTime;
+        const osc = clickAudioCtx.createOscillator();
+        const gain = clickAudioCtx.createGain();
+
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(pitch, now);
+        osc.frequency.exponentialRampToValueAtTime(190, now + duration);
+
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.linearRampToValueAtTime(peakGain, now + 0.005);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+        osc.connect(gain);
+        gain.connect(clickAudioCtx.destination);
+
+        osc.start(now);
+        osc.stop(now + duration + 0.01);
+    } catch (err) {
+        // Ignore Web Audio restrictions if unavailable
+    }
+}
+
+function setupClickSounds() {
+    document.addEventListener("click", function(event) {
+        if (gameOver) return;
+
+        const targetButton = event.target.closest("button");
+        if (!targetButton) return;
+
+        if (targetButton.classList.contains("clue-card")) {
+            playClickSound(760, 0.05, 0.09);
+        } else if (targetButton.classList.contains("app-icon")) {
+            playClickSound(820, 0.05, 0.09);
+        } else if (targetButton.id === "musicToggleBtn") {
+            playClickSound(580, 0.05, 0.08);
+        } else {
+            playClickSound(680, 0.045, 0.08);
+        }
+    });
+}
 
 function setupBackgroundMusic() {
     const audio = document.getElementById("bgMusic");
@@ -1167,6 +1229,7 @@ document.addEventListener("keydown", function(event) {
 document.addEventListener("DOMContentLoaded", function() {
 
     setupBackgroundMusic();
+    setupClickSounds();
 
     const currentScore =
         document.getElementById("currentScore");
