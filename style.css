@@ -47,6 +47,38 @@ button {
 }
 
 /* =====================================
+   AUDIO MUTE BUTTON & CLICK SOUND
+===================================== */
+
+.audio-toggle-btn {
+    position: fixed;
+    top: 14px;
+    right: 16px;
+    z-index: 40;
+    background: rgba(18, 19, 23, 0.92);
+    color: #e7e4e1;
+    border: 1px solid #654047;
+    border-radius: 3px;
+    padding: 7px 12px;
+    font-family: 'Inter', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    transition: .25s ease;
+}
+
+.audio-toggle-btn:hover {
+    background: #542329;
+    border-color: #b34a52;
+    color: #ffffff;
+}
+
+.audio-toggle-btn.muted {
+    color: #b69498;
+    border-color: #463338;
+}
+
+/* =====================================
    BACKGROUND EFFECT
 ===================================== */
 
@@ -651,7 +683,8 @@ input::placeholder {
 .computer-header {
     width: 100%;
     min-height: 55px;
-    padding: 15px 25px;
+    padding: 15px 25px 15px 25px;
+    padding-right: 135px;
     background: #0b0c10;
     border-bottom: 1px solid #393239;
     display: flex;
@@ -1182,6 +1215,7 @@ input::placeholder {
 
     .computer-header {
         padding: 13px;
+        padding-top: 48px;
         font-size: 9px;
         flex-wrap: wrap;
         gap: 12px;
