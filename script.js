@@ -26,19 +26,116 @@ const TOTAL_EVIDENCE = 5;
 const LEADERBOARD_KEY = "case404Leaderboard_v1";
 let collectedEvidence = new Set();
 
+let musicMuted = false;
+let clickAudioCtx = null;
+
 
 // ==========================================
-// BACKGROUND MUSIC (MUTED AT BEGINNING)
+// BACKGROUND MUSIC (ON FROM BEGINNING) & CLICK SOUND
 // ==========================================
 
-function initBackgroundMusic() {
+function updateAudioButtonUI() {
+    const btn = document.getElementById("audioToggleBtn");
+    if (!btn) return;
+
+    if (musicMuted) {
+        btn.textContent = "🔇 SOUND: OFF";
+        btn.classList.add("muted");
+    } else {
+        btn.textContent = "🔊 SOUND: ON";
+        btn.classList.remove("muted");
+    }
+}
+
+
+function playBackgroundMusic() {
     const audio = document.getElementById("bgMusic");
     if (!audio) return;
 
     audio.loop = true;
-    audio.muted = true;
     audio.volume = 0.35;
-    audio.play().catch(() => {});
+    audio.muted = musicMuted;
+
+    if (!musicMuted) {
+        audio.play().catch(() => {});
+    }
+}
+
+
+function toggleBackgroundMusic() {
+    const audio = document.getElementById("bgMusic");
+    musicMuted = !musicMuted;
+    updateAudioButtonUI();
+
+    if (!audio) return;
+
+    audio.muted = musicMuted;
+    if (!musicMuted) {
+        audio.volume = 0.35;
+        audio.loop = true;
+        audio.play().catch(() => {});
+        showNotification("Background music enabled.");
+    } else {
+        showNotification("Background music muted.");
+    }
+}
+
+
+function playClickSound() {
+    if (musicMuted) return;
+
+    try {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return;
+
+        if (!clickAudioCtx) {
+            clickAudioCtx = new AudioContextClass();
+        }
+        if (clickAudioCtx.state === "suspended") {
+            clickAudioCtx.resume().catch(() => {});
+        }
+
+        const now = clickAudioCtx.currentTime;
+        const osc = clickAudioCtx.createOscillator();
+        const gain = clickAudioCtx.createGain();
+
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(520, now);
+        osc.frequency.exponentialRampToValueAtTime(190, now + 0.045);
+
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.045);
+
+        osc.connect(gain);
+        gain.connect(clickAudioCtx.destination);
+
+        osc.start(now);
+        osc.stop(now + 0.05);
+    } catch (_) {
+        // Ignore audio synthesis restrictions
+    }
+}
+
+
+function initBackgroundMusic() {
+    musicMuted = false;
+    updateAudioButtonUI();
+    playBackgroundMusic();
+
+    const unlockOnce = () => {
+        playBackgroundMusic();
+        document.removeEventListener("pointerdown", unlockOnce);
+        document.removeEventListener("keydown", unlockOnce);
+    };
+
+    document.addEventListener("pointerdown", unlockOnce, { once: true });
+    document.addEventListener("keydown", unlockOnce, { once: true });
+
+    document.addEventListener("click", function(event) {
+        if (event.target.closest("button, .clue-card, .app-icon")) {
+            playClickSound();
+        }
+    });
 }
 
 
