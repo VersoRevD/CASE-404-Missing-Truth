@@ -47,7 +47,7 @@ button {
 }
 
 /* =====================================
-   AUDIO MUTE BUTTON & CLICK SOUND
+   AUDIO MUTE BUTTON
 ===================================== */
 
 .audio-toggle-btn {
@@ -514,9 +514,33 @@ input::placeholder {
     transition: .3s;
 }
 
-.hint-btn:hover {
+.hint-btn:hover:not(:disabled) {
     background: #321b20;
     border-color: #b34a52;
+}
+
+.hint-btn:disabled {
+    opacity: .45;
+    cursor: not-allowed;
+}
+
+.desktop-hint-box {
+    width: 100%;
+    max-width: 650px;
+    margin-top: 24px;
+    padding: 16px;
+    background: #13141a;
+    border: 1px solid #393239;
+    text-align: center;
+}
+
+.desktop-hint-box .hint-btn {
+    margin: 0 auto 10px;
+}
+
+.desktop-hint-output {
+    font-size: 12px;
+    color: #d6c5c7;
 }
 
 /* =====================================
@@ -683,7 +707,7 @@ input::placeholder {
 .computer-header {
     width: 100%;
     min-height: 55px;
-    padding: 15px 25px 15px 25px;
+    padding: 15px 25px;
     padding-right: 135px;
     background: #0b0c10;
     border-bottom: 1px solid #393239;
@@ -764,7 +788,7 @@ input::placeholder {
 
 .desktop-heading {
     text-align: center;
-    margin-bottom: 40px;
+    margin-bottom: 36px;
 }
 
 .desktop-heading h2 {
@@ -800,13 +824,13 @@ input::placeholder {
     border: 1px solid #39343a;
     border-radius: 5px;
     color: white;
-    min-height: 120px;
-    padding: 20px 8px;
+    min-height: 128px;
+    padding: 18px 8px;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    gap: 14px;
+    gap: 10px;
     transition: .3s;
 }
 
@@ -816,18 +840,34 @@ input::placeholder {
     transform: translateY(-5px);
 }
 
+.app-icon.locked {
+    border-style: dashed;
+    border-color: #5b383f;
+    background: rgba(18, 17, 22, .75);
+}
+
 .app-icon.collected {
     border-color: #72b58b;
     background: rgba(31, 46, 37, .65);
 }
 
 .app-icon span {
-    font-size: 35px;
+    font-size: 33px;
 }
 
 .app-icon small {
     color: #c9c2c5;
     font-size: 11px;
+}
+
+.lock-badge {
+    font-size: 9px !important;
+    letter-spacing: 1px;
+    color: #d68d92 !important;
+}
+
+.app-icon.collected .lock-badge {
+    color: #8fd4a8 !important;
 }
 
 /* =====================================
@@ -837,7 +877,7 @@ input::placeholder {
 .compile-section {
     width: 100%;
     max-width: 650px;
-    margin-top: 32px;
+    margin-top: 24px;
     padding: 20px;
     background: #14151b;
     border: 1px solid #393239;
@@ -1190,7 +1230,7 @@ input::placeholder {
     }
 
     .app-icon {
-        min-height: 105px;
+        min-height: 112px;
     }
 
     .app-icon span {
