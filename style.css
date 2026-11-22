@@ -158,35 +158,6 @@ button {
     margin: 25px 0 40px;
 }
 
-.music-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    margin: 18px auto 0;
-    padding: 10px 18px;
-    background: rgba(23, 23, 28, .85);
-    border: 1px solid #654047;
-    border-radius: 3px;
-    color: #d6c8cb;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 1.5px;
-    transition: .3s;
-}
-
-.music-btn:hover {
-    background: #542329;
-    border-color: #b34a52;
-    color: #ffffff;
-}
-
-.music-btn.muted {
-    border-color: #464247;
-    color: #8f898e;
-    background: rgba(14, 15, 19, .85);
-}
-
 .small-text {
     color: #68666b;
     font-size: 10px;
