@@ -21,76 +21,12 @@ let gameOver = false;
 let gameOverTimeout = null;
 let notificationTimeout = null;
 
-let musicMuted = false;
-let clickAudioCtx = null;
-let lastClickTime = 0;
-
 const correctPassword = "0907";
 
 
 // ==========================================
-// WEB AUDIO CLICK SOUND & BACKGROUND MUSIC
+// BACKGROUND MUSIC LOOP
 // ==========================================
-
-function playClickSound(pitch = 680, duration = 0.045, peakGain = 0.08) {
-    if (musicMuted) return;
-
-    const nowMs = performance.now();
-    if (nowMs - lastClickTime < 45) return;
-    lastClickTime = nowMs;
-
-    try {
-        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-        if (!AudioContextClass) return;
-
-        if (!clickAudioCtx) {
-            clickAudioCtx = new AudioContextClass();
-        }
-
-        if (clickAudioCtx.state === "suspended") {
-            clickAudioCtx.resume().catch(() => {});
-        }
-
-        const now = clickAudioCtx.currentTime;
-        const osc = clickAudioCtx.createOscillator();
-        const gain = clickAudioCtx.createGain();
-
-        osc.type = "triangle";
-        osc.frequency.setValueAtTime(pitch, now);
-        osc.frequency.exponentialRampToValueAtTime(190, now + duration);
-
-        gain.gain.setValueAtTime(0.0001, now);
-        gain.gain.linearRampToValueAtTime(peakGain, now + 0.005);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-
-        osc.connect(gain);
-        gain.connect(clickAudioCtx.destination);
-
-        osc.start(now);
-        osc.stop(now + duration + 0.01);
-    } catch (err) {
-        // Ignore Web Audio restrictions if unavailable
-    }
-}
-
-function setupClickSounds() {
-    document.addEventListener("click", function(event) {
-        if (gameOver) return;
-
-        const targetButton = event.target.closest("button");
-        if (!targetButton) return;
-
-        if (targetButton.classList.contains("clue-card")) {
-            playClickSound(760, 0.05, 0.09);
-        } else if (targetButton.classList.contains("app-icon")) {
-            playClickSound(820, 0.05, 0.09);
-        } else if (targetButton.id === "musicToggleBtn") {
-            playClickSound(580, 0.05, 0.08);
-        } else {
-            playClickSound(680, 0.045, 0.08);
-        }
-    });
-}
 
 function setupBackgroundMusic() {
     const audio = document.getElementById("bgMusic");
@@ -98,16 +34,11 @@ function setupBackgroundMusic() {
 
     audio.loop = true;
     audio.volume = 0.35;
-    audio.muted = musicMuted;
 
     audio.addEventListener("ended", () => {
-        if (!musicMuted) {
-            audio.currentTime = 0;
-            audio.play().catch(() => {});
-        }
+        audio.currentTime = 0;
+        audio.play().catch(() => {});
     });
-
-    updateMusicButton();
 }
 
 function startBackgroundMusic() {
@@ -116,47 +47,9 @@ function startBackgroundMusic() {
 
     audio.loop = true;
     audio.volume = 0.35;
-    audio.muted = musicMuted;
 
-    if (!musicMuted && audio.paused) {
+    if (audio.paused) {
         audio.play().catch(() => {});
-    }
-
-    updateMusicButton();
-}
-
-function toggleMusic() {
-    const audio = document.getElementById("bgMusic");
-    if (!audio) return;
-
-    musicMuted = !musicMuted;
-    audio.loop = true;
-    audio.volume = 0.35;
-    audio.muted = musicMuted;
-
-    if (!musicMuted) {
-        audio.play().catch(() => {});
-    }
-
-    updateMusicButton();
-    showNotification(musicMuted ? "Background music muted." : "Background music unmuted.");
-}
-
-function updateMusicButton() {
-    const icon = document.getElementById("musicIcon");
-    const label = document.getElementById("musicLabel");
-    const btn = document.getElementById("musicToggleBtn");
-
-    if (icon) {
-        icon.textContent = musicMuted ? "🔇" : "🔊";
-    }
-
-    if (label) {
-        label.textContent = musicMuted ? "MUSIC: MUTED" : "MUSIC: ON";
-    }
-
-    if (btn) {
-        btn.classList.toggle("muted", musicMuted);
     }
 }
 
@@ -480,18 +373,6 @@ const clues = [
         title: "OLD REMINDER",
 
         text: `"If I ever forget my computer password, remember this: Enter the day first, followed by the month. Four digits only."`
-    },
-
-    {
-        title: "DESK STICKY NOTE",
-
-        text: `"Format reminder: DDMM — day first, then month. Always keep leading zeros so it's four digits."`
-    },
-
-    {
-        title: "TORN RECEIPT",
-
-        text: `"09/07/2026 • 4:15 PM. Scrawled on the back: 'The day everything changed. Don't forget this date.'"`
     }
 
 ];
@@ -1229,7 +1110,6 @@ document.addEventListener("keydown", function(event) {
 document.addEventListener("DOMContentLoaded", function() {
 
     setupBackgroundMusic();
-    setupClickSounds();
 
     const currentScore =
         document.getElementById("currentScore");
