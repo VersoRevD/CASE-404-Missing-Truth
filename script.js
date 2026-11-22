@@ -1,3 +1,4 @@
+
 // ==========================================
 // CASE 404: MISSING TRUTH
 // COMPLETE GAME JAVASCRIPT
@@ -22,36 +23,6 @@ let gameOverTimeout = null;
 let notificationTimeout = null;
 
 const correctPassword = "0907";
-
-
-// ==========================================
-// BACKGROUND MUSIC LOOP
-// ==========================================
-
-function setupBackgroundMusic() {
-    const audio = document.getElementById("bgMusic");
-    if (!audio) return;
-
-    audio.loop = true;
-    audio.volume = 0.35;
-
-    audio.addEventListener("ended", () => {
-        audio.currentTime = 0;
-        audio.play().catch(() => {});
-    });
-}
-
-function startBackgroundMusic() {
-    const audio = document.getElementById("bgMusic");
-    if (!audio) return;
-
-    audio.loop = true;
-    audio.volume = 0.35;
-
-    if (audio.paused) {
-        audio.play().catch(() => {});
-    }
-}
 
 
 // ==========================================
@@ -151,8 +122,6 @@ function registerInvestigator() {
 function startInvestigation() {
 
     if (gameOver) return;
-
-    startBackgroundMusic();
 
     if (!timerRunning && !unlocked) {
 
@@ -1108,8 +1077,6 @@ document.addEventListener("keydown", function(event) {
 // ==========================================
 
 document.addEventListener("DOMContentLoaded", function() {
-
-    setupBackgroundMusic();
 
     const currentScore =
         document.getElementById("currentScore");
