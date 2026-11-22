@@ -1,4 +1,3 @@
-
 // ==========================================
 // CASE 404: MISSING TRUTH
 // COMPLETE GAME JAVASCRIPT
@@ -23,6 +22,24 @@ let gameOverTimeout = null;
 let notificationTimeout = null;
 
 const correctPassword = "0907";
+const TOTAL_EVIDENCE = 5;
+const LEADERBOARD_KEY = "case404Leaderboard_v1";
+let collectedEvidence = new Set();
+
+
+// ==========================================
+// BACKGROUND MUSIC (MUTED AT BEGINNING)
+// ==========================================
+
+function initBackgroundMusic() {
+    const audio = document.getElementById("bgMusic");
+    if (!audio) return;
+
+    audio.loop = true;
+    audio.muted = true;
+    audio.volume = 0.35;
+    audio.play().catch(() => {});
+}
 
 
 // ==========================================
@@ -77,6 +94,7 @@ function backToInvestigation() {
     if (gameOver) return;
 
     closeApp();
+    closeCompileModal();
     showScreen("passwordScreen");
 
     showNotification("Returned to Password Investigation.");
@@ -150,15 +168,21 @@ function startInvestigation() {
 }
 
 
-function updateTimer() {
+function formatSeconds(totalSeconds) {
+    const minutes = Math.floor(totalSeconds / 60);
+    const remainingSeconds = totalSeconds % 60;
 
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-
-    const formattedTime =
+    return (
         String(minutes).padStart(2, "0") +
         ":" +
-        String(remainingSeconds).padStart(2, "0");
+        String(remainingSeconds).padStart(2, "0")
+    );
+}
+
+
+function updateTimer() {
+
+    const formattedTime = formatSeconds(seconds);
 
     const timer = document.getElementById("timer");
     const desktopClock = document.getElementById("desktopClock");
@@ -185,6 +209,208 @@ function stopTimer() {
 
 
 // ==========================================
+// EVIDENCE & CONCLUSION HELPERS
+// ==========================================
+
+function resetEvidenceProgress() {
+    collectedEvidence.clear();
+
+    document.querySelectorAll("#computerScreen .app-icon").forEach(btn => {
+        btn.classList.remove("collected");
+    });
+
+    updateEvidenceUI();
+}
+
+
+function updateEvidenceUI() {
+    const count = collectedEvidence.size;
+    const counterEl = document.getElementById("evidenceCount");
+    const compileBtn = document.getElementById("compileCaseBtn");
+    const statusText = document.getElementById("compileStatusText");
+
+    if (counterEl) {
+        counterEl.textContent = `${count}/${TOTAL_EVIDENCE}`;
+    }
+
+    if (compileBtn) {
+        compileBtn.textContent = `COMPILE CASE (${count}/${TOTAL_EVIDENCE} EVIDENCE)`;
+        compileBtn.disabled = count < TOTAL_EVIDENCE;
+    }
+
+    if (statusText) {
+        statusText.textContent = count >= TOTAL_EVIDENCE
+            ? "All 5/5 evidence collected. You can now compile why Elena was murdered."
+            : `Collect all ${TOTAL_EVIDENCE}/${TOTAL_EVIDENCE} evidence items to compile why Elena was murdered.`;
+    }
+}
+
+
+function markAppCollected(appName) {
+    const appIndexMap = {
+        files: 0,
+        photos: 1,
+        messages: 2,
+        notes: 3,
+        history: 4
+    };
+
+    const buttons = document.querySelectorAll("#computerScreen .app-icon");
+    const idx = appIndexMap[appName];
+    if (typeof idx === "number" && buttons[idx]) {
+        buttons[idx].classList.add("collected");
+    }
+}
+
+
+function openCompileModal() {
+    if (gameOver || !unlocked || collectedEvidence.size < TOTAL_EVIDENCE) return;
+
+    const modal = document.getElementById("compileModal");
+    const err = document.getElementById("compileError");
+    if (err) err.textContent = "";
+
+    document.querySelectorAll('input[name="murderMotive"]').forEach(radio => {
+        radio.checked = false;
+    });
+
+    if (modal) {
+        modal.classList.add("show");
+    }
+}
+
+
+function closeCompileModal() {
+    const modal = document.getElementById("compileModal");
+    if (modal) {
+        modal.classList.remove("show");
+    }
+}
+
+
+function submitCaseConclusion() {
+    if (gameOver || collectedEvidence.size < TOTAL_EVIDENCE) return;
+
+    const selected = document.querySelector('input[name="murderMotive"]:checked');
+    const err = document.getElementById("compileError");
+
+    if (!selected) {
+        if (err) {
+            err.textContent = "Please select a conclusion before submitting.";
+        }
+        return;
+    }
+
+    if (err) err.textContent = "";
+
+    const isCorrectMotive = selected.value === "evidence";
+    if (!isCorrectMotive) {
+        score = Math.max(0, score - 15);
+    }
+
+    stopTimer();
+    closeApp();
+    closeCompileModal();
+
+    const finalScore = score;
+    const finalTimeFormatted = formatSeconds(seconds);
+    const investigatorName = investigator || "Anonymous Investigator";
+
+    saveLeaderboardEntry({
+        name: investigatorName,
+        score: finalScore,
+        seconds: seconds,
+        timeFormatted: finalTimeFormatted,
+        solvedAccurately: isCorrectMotive
+    });
+
+    renderSolvedScreen(investigatorName, finalScore, finalTimeFormatted, isCorrectMotive);
+    showScreen("solvedScreen");
+    showNotification("Case report submitted.");
+}
+
+
+function saveLeaderboardEntry(entry) {
+    let list = [];
+    try {
+        const raw = localStorage.getItem(LEADERBOARD_KEY);
+        if (raw) {
+            list = JSON.parse(raw);
+        }
+    } catch (_) {
+        list = [];
+    }
+
+    list.push(entry);
+
+    list.sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return a.seconds - b.seconds;
+    });
+
+    list = list.slice(0, 10);
+
+    try {
+        localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(list));
+    } catch (_) {
+        // Ignore storage quota errors
+    }
+}
+
+
+function renderSolvedScreen(name, finalScore, timeFormatted, accurate) {
+    const verdictBox = document.getElementById("caseVerdictBox");
+    const invEl = document.getElementById("summaryInvestigator");
+    const scoreEl = document.getElementById("summaryScore");
+    const timeEl = document.getElementById("summaryTime");
+    const evEl = document.getElementById("summaryEvidence");
+    const listEl = document.getElementById("leaderboardList");
+
+    if (verdictBox) {
+        verdictBox.innerHTML = accurate
+            ? "<strong>CONCLUSION VERIFIED:</strong> Elena was targeted after uncovering sensitive evidence and refusing to delete her files and photos despite escalating stalking and threats."
+            : "<strong>CONCLUSION FLAGGED (-15 PTS):</strong> Evidence points to stalking, threats, and hidden files rather than your selected theory. Final score adjusted.";
+    }
+
+    if (invEl) invEl.textContent = name;
+    if (scoreEl) scoreEl.textContent = String(finalScore);
+    if (timeEl) timeEl.textContent = timeFormatted;
+    if (evEl) evEl.textContent = `${collectedEvidence.size}/${TOTAL_EVIDENCE}`;
+
+    if (listEl) {
+        let entries = [];
+        try {
+            const raw = localStorage.getItem(LEADERBOARD_KEY);
+            if (raw) entries = JSON.parse(raw);
+        } catch (_) {
+            entries = [];
+        }
+
+        if (!entries.length) {
+            listEl.innerHTML = `<div class="leaderboard-row"><span>No records yet.</span></div>`;
+            return;
+        }
+
+        listEl.innerHTML = entries.map((item, idx) => `
+            <div class="leaderboard-row">
+                <div>
+                    <strong>#${idx + 1} ${item.name}</strong>
+                    <small style="display:block;color:#999197;">Time: ${item.timeFormatted}</small>
+                </div>
+                <span>${item.score} PTS</span>
+            </div>
+        `).join("");
+    }
+}
+
+
+function resetToStartScreen() {
+    resetAfterGameOver();
+    showScreen("startScreen");
+}
+
+
+// ==========================================
 // AUTOMATIC GAME OVER SYSTEM
 // ==========================================
 
@@ -198,6 +424,7 @@ function triggerGameOver() {
     stopTimer();
     closeClue();
     closeApp();
+    closeCompileModal();
 
     const notification = document.getElementById("notification");
 
@@ -268,6 +495,7 @@ function resetAfterGameOver() {
     unlocked = false;
 
     stopTimer();
+    resetEvidenceProgress();
 
     const investigatorName =
         document.getElementById("investigatorName");
@@ -309,6 +537,7 @@ function resetAfterGameOver() {
 
     closeClue();
     closeApp();
+    closeCompileModal();
 
     const notification = document.getElementById("notification");
 
@@ -480,6 +709,7 @@ function checkPassword() {
             if (gameOver) return;
 
             closeApp();
+            updateEvidenceUI();
 
             showScreen("computerScreen");
 
@@ -933,7 +1163,19 @@ function openApp(appName) {
 
     appWindow.classList.add("show");
 
-    showNotification(app.title + " opened.");
+    const isNewEvidence = !collectedEvidence.has(appName);
+    if (isNewEvidence) {
+        collectedEvidence.add(appName);
+        markAppCollected(appName);
+        updateEvidenceUI();
+        showNotification(
+            `Evidence collected (${collectedEvidence.size}/${TOTAL_EVIDENCE}): ${app.title}`
+        );
+    } else {
+        showNotification(
+            `${app.title} already examined (${collectedEvidence.size}/${TOTAL_EVIDENCE} evidence).`
+        );
+    }
 }
 
 
@@ -989,6 +1231,7 @@ function returnToMainMenu() {
     if (!confirmReturn) return;
 
     stopTimer();
+    resetEvidenceProgress();
 
     investigator = "";
     score = 100;
@@ -1034,6 +1277,7 @@ function returnToMainMenu() {
 
     closeApp();
     closeClue();
+    closeCompileModal();
 
     updateTimer();
 
@@ -1059,6 +1303,7 @@ document.addEventListener("keydown", function(event) {
     if (event.key === "Escape") {
         closeClue();
         closeApp();
+        closeCompileModal();
     }
 
     if (
@@ -1077,6 +1322,9 @@ document.addEventListener("keydown", function(event) {
 // ==========================================
 
 document.addEventListener("DOMContentLoaded", function() {
+
+    initBackgroundMusic();
+    updateEvidenceUI();
 
     const currentScore =
         document.getElementById("currentScore");
